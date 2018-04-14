@@ -792,6 +792,7 @@ int termsize()
 
 
 
+char *strinterpreter();
 
 
 /////////////////////////////////
@@ -800,9 +801,26 @@ int termsize()
 char *strinterpreter(char *str)
 {  
       char ptr[ PATH_MAX ];  /// to have enough space
+      char fooline[PATH_MAX];
       int i,j=0;  int toxi = 0; int fonmem ; 
       for(i=0; str[i]!='\0'; i++)
       {
+
+        if ( str[i] == '$' ) 
+        {
+          if ( str[i+1] == '[' ) 
+          if ( str[i+3] == ']' ) 
+	  {  
+            fonmem = str[i+2]-49+1;
+            strncpy( fooline, strinterpreter( ncell[fonmem] ) , PATH_MAX );
+            for(toxi=0; fooline[toxi]!='\0'; toxi++)
+               ptr[j++]=fooline[toxi];
+            i++;
+            i++;
+            i++;
+            i++;
+	  }
+	}
 
         if ( str[i] == '$' ) 
         {
