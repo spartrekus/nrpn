@@ -1057,7 +1057,6 @@ char *strninput( char *myinitstring )
                   printw( " " );
                   attroff( A_REVERSE );
                   attroff( A_REVERSE );
-                  attroff( A_BOLD );
                   refresh() ; 
 
                   curs_set( 0 );
@@ -1155,13 +1154,24 @@ void proc_sto_memory()
 
 void proc_nrpn_spreadsheet()
 {
+   if ( nrpn_text_bold == 1 ) attron( A_BOLD); else attroff( A_BOLD);
+
    int j, i;  int tableselx = 1; int tablesely = 1;
    char charo[PATH_MAX]; int foo ;  int foopile; int ch = 0 ; char spcharo[PATH_MAX]; int rruni ; int rrunj; 
    foo = 1;  tableselx = 1;  tablesely = 1; int spreadsheet_gameover = 0;  char cellval[PATH_MAX]; int toss;
                           while( spreadsheet_gameover == 0 )
                           {
+                           if ( tableselx <= 1) tableselx = 1; 
+                           if ( tablesely <= 1) tablesely = 1; 
                            erase();
                            mvprintw( 0,0, "|NRPN (GNU)|Spartrekus|");
+
+                           for( rruni = 1 ; rruni <= rows-1 ; rruni++ )
+                           mvprintw( 1+ rruni, 0 , "R%d", rruni );
+
+                           for( rrunj = 1 ; rrunj <= 10 ; rrunj++ )
+                           mvprintw( 1, 3+10*rrunj -8 , "C%d", rrunj );
+
                            for( rruni = 1 ; rruni <= rows-1 ; rruni++ )
                            for( rrunj = 1 ; rrunj <= 10 ; rrunj++ )
                            {
@@ -1172,7 +1182,7 @@ void proc_nrpn_spreadsheet()
                              {
                                if ( strcmp( cellval, "" ) == 0 )     strncpy( cellval , "_", PATH_MAX );
                                strncpy( cellval , ncell[rruni][rrunj] , PATH_MAX );
-                               mvprintw(rruni, 10*rrunj -8 , "%s", strcut( cellval, 2, strlen( cellval) ));
+                               mvprintw( 1+ rruni, 3+10*rrunj -8 , "%s", strcut( cellval, 2, strlen( cellval) ));
                              }
                              else 
                              {
@@ -1180,7 +1190,7 @@ void proc_nrpn_spreadsheet()
                                if ( strcmp( cellval , "nan" ) == 0 )  strncpy( cellval , "?", PATH_MAX );
                                else if ( strcmp( cellval, "" ) == 0 )     strncpy( cellval , "_", PATH_MAX );
                                if ( strcmp(ncell[rruni][rrunj] , "" ) == 0 ) strncpy( cellval , "_", PATH_MAX );
-                               mvprintw(rruni, 10*rrunj -8 , "%s",   strcut( cellval , 1 , 8 ) );
+                               mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%s",   strcut( cellval , 1 , 8 ) );
                              }
                            }
                            mvprintw(rows-1, 0, "|CELL #R%d,C%d = %s|", tablesely, tableselx, 
@@ -1191,6 +1201,7 @@ void proc_nrpn_spreadsheet()
                            else if ( ch == 'i' )  spreadsheet_gameover = 1; 
                            else if ( ch == 'm' )  proc_sto_memory();
                            else if ( ch == '#' )  spreadsheet_gameover = 1; 
+                           else if ( ch == 9 )  spreadsheet_gameover = 1; 
                            else if ( ch == KEY_DOWN )  tablesely++;
                            else if ( ch == KEY_UP )  tablesely--;
                            else if ( ch == KEY_LEFT )  tableselx--;
@@ -1212,7 +1223,7 @@ void proc_nrpn_spreadsheet()
                              foo = snprintf( spcharo, PATH_MAX , "'%s", strninput( ncell[tablesely][tableselx] ));
                              strncpy( ncell[tablesely][tableselx], strrlf( spcharo ) , CELLSTRMAX );
                            }
-                           else if ( ch == 10 )  
+                           else if  ( ( ch == 10 ) || ( ch == '=' ) )
                            {
                              attron( A_REVERSE ); mvprintw( rows-2, 0, "[SET #R%dC%d CELL]", tablesely, tableselx ); attroff( A_REVERSE );
                              foo = snprintf( spcharo, PATH_MAX , "%s", strninput( ncell[tablesely][tableselx] ));
@@ -1302,10 +1313,8 @@ int main( int argc, char *argv[])
            color_set( 4, NULL ); 
            attroff( A_REVERSE);
 
-           if ( nrpn_text_bold == 1 )
-             attron( A_BOLD);
-           else 
-             attroff( A_BOLD);
+           if ( nrpn_text_bold == 1 ) attron( A_BOLD); else attroff( A_BOLD);
+
            erase();
            mvprintw( 0,0, "|NRPN (GNU)|Spartrekus|");
 
@@ -1489,11 +1498,6 @@ int main( int argc, char *argv[])
                       if ( pile >= pilemax ) pilemax++;
                  }
 
-		  else if ( ch == 9 ) 
-		  {
-                     if ( mode == 1 ) mode = 2;
-                     else mode = 1;
-                  }
 
 		  
 	          else if (( mode == 1 ) && ( ch == 10 ))
@@ -1640,12 +1644,19 @@ int main( int argc, char *argv[])
 
 
                        else if ( ( mode == 2 ) && ( ch ==  'm' ) )
-                       {
                          proc_sto_memory();
-                       }
 
-                       else if ( ( mode == 2 ) && ( ch ==  '#' ) )
+                       else if ( ( mode == 2 ) && ( ch == 9 ) ) //tab
                           proc_nrpn_spreadsheet();
+
+                       else if ( ( mode == 2 ) && ( ch == '#' ) ) //still there
+                          proc_nrpn_spreadsheet();
+
+                  else if ( ch == KEY_F(10))
+		  {
+                     if ( mode == 1 ) mode = 2;
+                     else mode = 1;
+                  }
 
 
                       /*
