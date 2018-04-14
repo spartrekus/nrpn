@@ -1168,11 +1168,20 @@ void proc_nrpn_spreadsheet()
                             attroff(A_REVERSE);
                             if ( rrunj == tableselx ) if ( rruni == tablesely ) attron(A_REVERSE);
 
-                             toss = snprintf( cellval , PATH_MAX , "%f", te_interp( strinterpreter( ncell[rruni][rrunj]), 0 ));
-                             if ( strcmp( cellval , "nan" ) == 0 )  strncpy( cellval , "?", PATH_MAX );
-                             else if ( strcmp( cellval, "" ) == 0 )     strncpy( cellval , "_", PATH_MAX );
-                             if ( strcmp(ncell[rruni][rrunj] , "" ) == 0 ) strncpy( cellval , "_", PATH_MAX );
-                             mvprintw(rruni, 10*rrunj -8 , "%s",   strcut( cellval , 1 , 8 ) );
+                             if ( ncell[rruni][rrunj][0] == '\'' )
+                             {
+                               if ( strcmp( cellval, "" ) == 0 )     strncpy( cellval , "_", PATH_MAX );
+                               strncpy( cellval , ncell[rruni][rrunj] , PATH_MAX );
+                               mvprintw(rruni, 10*rrunj -8 , "%s", strcut( cellval, 2, strlen( cellval) ));
+                             }
+                             else 
+                             {
+                               toss = snprintf( cellval , PATH_MAX , "%f", te_interp( strinterpreter( ncell[rruni][rrunj]), 0 ));
+                               if ( strcmp( cellval , "nan" ) == 0 )  strncpy( cellval , "?", PATH_MAX );
+                               else if ( strcmp( cellval, "" ) == 0 )     strncpy( cellval , "_", PATH_MAX );
+                               if ( strcmp(ncell[rruni][rrunj] , "" ) == 0 ) strncpy( cellval , "_", PATH_MAX );
+                               mvprintw(rruni, 10*rrunj -8 , "%s",   strcut( cellval , 1 , 8 ) );
+                             }
                            }
                            mvprintw(rows-1, 0, "|CELL #R%d,C%d = %s|", tablesely, tableselx, 
                            strcut( ncell[tablesely][tableselx] , 1 , cols - 4 ) );
@@ -1196,6 +1205,12 @@ void proc_nrpn_spreadsheet()
                            {
                               strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
                               strncpy( ncell[tablesely][tableselx], "" , CELLSTRMAX );
+                           }
+                           else if ( ch == '\'' )  
+                           {
+                             attron( A_REVERSE ); mvprintw( rows-2, 0, "[SET #R%dC%d CELL (STRING)]", tablesely, tableselx ); attroff( A_REVERSE );
+                             foo = snprintf( spcharo, PATH_MAX , "'%s", strninput( ncell[tablesely][tableselx] ));
+                             strncpy( ncell[tablesely][tableselx], strrlf( spcharo ) , CELLSTRMAX );
                            }
                            else if ( ch == 10 )  
                            {
