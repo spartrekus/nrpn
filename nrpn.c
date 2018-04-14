@@ -947,8 +947,10 @@ char *strinterpreter(char *str)
             }
             strncpy( fooline, strinterpreter( ncell[fonmem][fonmemln] ) , PATH_MAX );
 
+            ptr[j++]='(';
             for(toxi=0; fooline[toxi]!='\0'; toxi++)
                ptr[j++]=fooline[toxi];
+            ptr[j++]=')';
 
             i = dospos+1;
 	  }
