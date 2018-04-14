@@ -923,7 +923,7 @@ char *strinterpreter(char *str)
 
         // experimental 
         if ( str[i] == '$' ) 
-        if ( strlen( str ) >= 3 )
+        //if ( strlen( str ) >= 3 )
         {
           if ( str[i+1] == '[' ) 
 	  { 
@@ -984,6 +984,85 @@ char *strinterpreter(char *str)
       char *r = malloc( 1 +  sizeof ptr );
       return r ? memcpy(r, ptr, siz ) : NULL;
 }
+
+
+
+
+
+
+
+
+
+
+/////////////////////////////////////
+/////////////////////////////////////
+/////////////////////////////////////
+/////////////////////////////////////
+char *strcopyformulas(char *str)
+{  
+      char ptr[ PATH_MAX ];  /// to have enough space
+      char fooline[PATH_MAX];
+      char foocharo[PATH_MAX]; int fooval ; 
+      char cellmiddle[PATH_MAX];
+      int i,j=0;  int toxi = 0; 
+      int dos = 0; int dospos = 0; int dosfnsep = 0;
+      int fonmem ; 
+      int fonmemln ;  
+      for(i=0; str[i]!='\0'; i++)
+      {
+        // experimental 
+        if ( str[i] == '$' ) 
+        {
+          if ( str[i+1] == '[' ) 
+	  { 
+            dospos = 0; dosfnsep = 0;
+            for(dos=i; str[dos]!='\0'; dos++)
+            { 
+               if ( str[ dos ] == ',' )  dosfnsep = 1;
+               if ( dospos == 0 ) if ( str[ dos ] == ']' )  dospos = dos;
+            }
+
+            strncpy( cellmiddle, strcut( str , i+1 , dospos+1 ) , PATH_MAX );
+            if ( dosfnsep == 1 )
+            {
+               fonmem =     atoi( strdelimit( cellmiddle, '[', ',' , 1 ));
+               fonmemln =   atoi( strdelimit( cellmiddle, ',', ']' , 1 ));
+            }
+            else if ( dosfnsep == 0 )
+            {
+               fonmem =  atoi( strdelimit( cellmiddle, '[', ']' , 1 ));
+               fonmemln = 1;
+            }
+            fooval = snprintf( foocharo , PATH_MAX , "%d,%d", fonmem+1, fonmemln );
+            strncpy( fooline, foocharo , PATH_MAX );
+
+            ptr[j++]='$';
+            ptr[j++]='[';
+            for(toxi=0; fooline[toxi]!='\0'; toxi++)
+               ptr[j++]=fooline[toxi];
+            ptr[j++]=']';
+
+            //i = dospos+1;
+            i = dospos; 
+	  }
+	}
+
+        else
+          ptr[j++]=str[i];
+
+      } 
+      ptr[j]='\0';
+      size_t siz = 1 + sizeof ptr ; 
+      char *r = malloc( 1 +  sizeof ptr );
+      return r ? memcpy(r, ptr, siz ) : NULL;
+}
+
+
+
+
+
+
+
 
 
 
@@ -1077,6 +1156,8 @@ void nrpn_help( )
    mvprintw( i++, 0, "b: Turn Reverse Current Stack  (in visual mode)");
    mvprintw( i++, 0, "hjkl: Moving    (in visual mode)");
    mvprintw( i++, 0, "y,p: Copy/Paste (in visual mode)");
+   mvprintw( i++, 0, "c: Copy cell location in clipboard (in visual mode)");
+   mvprintw( i++, 0, "P: Paste formula from clipboard with automatic increment (in visual mode)");
    mvprintw( i++, 0, " " );
    mvprintw( i++, 0, "(PLEASE READ *IMPORTANT*: This Software is in development with no warranty, it may have bugs, no support, possible errors, ...)" );
    getch();
@@ -1305,6 +1386,23 @@ void proc_nrpn_spreadsheet()
                            else if ( ch == 'l' )  tableselx++;
                            else if ( ch == 'y' )  strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
                            else if ( ch == 'p' )  strncpy( ncell[tablesely][tableselx], clipboard , CELLSTRMAX );
+                           else if ( ch == 'c' )  //clone cell by pass cell R,C 
+                           { 
+                              strncpy( clipboard , "$[" , CELLSTRMAX);
+                              foo = snprintf( spcharo, CELLSTRMAX , "%d", tablesely );
+                              strncat( clipboard , spcharo  , CELLSTRMAX - strlen( clipboard ) -1 );
+                              strncat( clipboard , ","  , CELLSTRMAX - strlen( clipboard ) -1 );
+                              foo = snprintf( spcharo, CELLSTRMAX , "%d", tableselx );
+                              strncat( clipboard , spcharo  , CELLSTRMAX - strlen( clipboard ) -1 );
+                              strncat( clipboard , "]" , CELLSTRMAX - strlen( clipboard ) -1 );
+                           }
+		           else if ( ch == KEY_F(1) ) nrpn_help();
+                           else if ( ( ch == 'P' )  &&  ( strcmp( clipboard, "" ) != 0 ) )
+                           { 
+                             strncpy( spcharo, strcopyformulas( clipboard ), PATH_MAX ); 
+                             strncpy( ncell[tablesely][tableselx], spcharo , CELLSTRMAX );
+                             strncpy( clipboard , spcharo , CELLSTRMAX );
+                           }
                            else if ( ch == 'x' )  
                            {
                               strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
@@ -1607,8 +1705,7 @@ int main( int argc, char *argv[])
 		  else if ( ch == KEY_F(8) ) 
                        suppr_pile( pile );
 
-		  else if ( ch == KEY_F(1) ) 
-                     nrpn_help();
+		  else if ( ch == KEY_F(1) ) nrpn_help();
 
 		  else if ( ch == KEY_F(2) ) 
                     piles_copy();
