@@ -12,8 +12,8 @@
 
 #define CELLSTRMAX 1024
 char nmemory[61][PATH_MAX];
+char ncell[52][32][1024];
 char ncell_clip[52][1024];
-char ncell[52][1024];
 int ncell_colorscheme[52];
 char clipboard[1024];
 int pile = 1;
@@ -802,7 +802,9 @@ char *strinterpreter(char *str)
 {  
       char ptr[ PATH_MAX ];  /// to have enough space
       char fooline[PATH_MAX];
-      int i,j=0;  int toxi = 0; int fonmem ; 
+      int i,j=0;  int toxi = 0; 
+      int fonmem ; 
+      int fonmemln ; 
       for(i=0; str[i]!='\0'; i++)
       {
 
@@ -812,7 +814,7 @@ char *strinterpreter(char *str)
           if ( str[i+3] == ']' ) 
 	  {  
             fonmem = str[i+2]-49+1;
-            strncpy( fooline, strinterpreter( ncell[fonmem] ) , PATH_MAX );
+            strncpy( fooline, strinterpreter( ncell[fonmem][1] ) , PATH_MAX );
             for(toxi=0; fooline[toxi]!='\0'; toxi++)
                ptr[j++]=fooline[toxi];
             i++;
@@ -821,6 +823,23 @@ char *strinterpreter(char *str)
             i++;
 	  }
 	}
+
+        if ( str[i] == '$' ) 
+        {
+          if ( str[i+1] == '[' ) 
+          if ( str[i+3] == ',' ) 
+          if ( str[i+5] == ']' ) 
+	  {  
+            fonmem =   str[i+2]-49+1;
+            fonmemln = str[i+4]-49+1;
+            strncpy( fooline, strinterpreter( ncell[fonmem][fonmemln] ) , PATH_MAX );
+            for(toxi=0; fooline[toxi]!='\0'; toxi++)
+               ptr[j++]=fooline[toxi];
+            i++; i++; i++; i++;
+            i++; i++; 
+	  }
+	}
+
 
         if ( str[i] == '$' ) 
         {
@@ -869,10 +888,10 @@ char *strconvtxt(char *str)
           ptr[j++]=' ';
 	}
 
-        else if ( str[i] == ',' ) 
-	{
-          ptr[j++]='.';
-	}
+        //else if ( str[i] == ',' ) 
+	//{
+        //  ptr[j++]='.';
+	//}
 
         else if ( str[i] == ';' ) 
 	{
@@ -916,6 +935,7 @@ char *strrlf(char *str)
       char *r = malloc( sizeof ptr );
       return r ? memcpy(r, ptr, siz ) : NULL;
 }
+
 ////////////////////////////////////////////////////////////////////
 char *strcut( char *str , int myposstart, int myposend )
 {     // copyleft, C function made by Spartrekus 
@@ -939,7 +959,7 @@ void piles_copy( )
    int i ; 
    for( i = 1 ; i <= 50 ; i++ )
    {
-     strncpy( ncell_clip[i], ncell[ i ], CELLSTRMAX );
+     strncpy( ncell_clip[i], ncell[i][1], CELLSTRMAX );
    }
 }
 
@@ -947,7 +967,7 @@ void piles_paste( )
 {
    int i ; 
    for( i = 1 ; i <= 50 ; i++ )
-     strncpy( ncell[ i ] , ncell_clip[i] , CELLSTRMAX );
+     strncpy( ncell[i][1], ncell_clip[i] , CELLSTRMAX );
 }
 
 
@@ -956,8 +976,8 @@ void ins_pile( int pile1 )
   int fooi = 1; 
   int topile = pile1 +1;
   for( fooi = 11 ; fooi >= topile ; fooi--)   
-     strncpy( ncell[ fooi ], ncell[ fooi-1 ] ,  CELLSTRMAX );
-  strncpy( ncell[ topile ], "" ,  CELLSTRMAX );
+     strncpy( ncell[fooi][1], ncell[fooi-1][1],  CELLSTRMAX );
+  strncpy( ncell[ topile ][1], "" ,  CELLSTRMAX );
 }
 
 
@@ -978,15 +998,17 @@ void nrpn_help( )
    mvprintw( i++, 0, "b: Turn Reverse Current Stack  (in visual mode)");
    mvprintw( i++, 0, "hjkl: Moving    (in visual mode)");
    mvprintw( i++, 0, "y,p: Copy/Paste (in visual mode)");
+   mvprintw( i++, 0, " " );
+   mvprintw( i++, 0, "(PLEASE READ *IMPORTANT*: This Software is in development with no warranty, it may have bugs, no support, possible errors, ...)" );
    getch();
 }
 
 void suppr_pile( int pile1 ) 
 {
   int fooi = 1; 
-  strncpy( ncell[pile1], "" ,  CELLSTRMAX );
+  strncpy( ncell[pile1][1], "" ,  CELLSTRMAX );
   for( fooi = 1 ; fooi <= 10 ; fooi++)   
-      strncpy( ncell[ pile1 + fooi-1  ], ncell[ pile1 + fooi ] ,  CELLSTRMAX );
+      strncpy( ncell[ pile1 + fooi-1  ][1], ncell[ pile1 + fooi ][1] ,  CELLSTRMAX );
 }
 
 
@@ -998,13 +1020,13 @@ void calc_pile( int pile2, int pile1 , int modecalc )
 {
   int fooi = 1; 
   char foocharo[CELLSTRMAX]; strncpy( foocharo, "", CELLSTRMAX );
-  fooi = snprintf( foocharo , CELLSTRMAX , "%s %c %s", ncell[pile2] , modecalc , ncell[ pile1 ] );
-  if ( strcmp( ncell[ pile1 ], "" ) != 0 ) 
-    strncpy( ncell[pile2],  foocharo ,  CELLSTRMAX );
+  fooi = snprintf( foocharo , CELLSTRMAX , "%s %c %s", ncell[pile2][1] , modecalc , ncell[ pile1 ][1] );
+  if ( strcmp( ncell[ pile1 ][1], "" ) != 0 ) 
+    strncpy( ncell[pile2][1],  foocharo ,  CELLSTRMAX );
   // ranger piles
-  strncpy( ncell[pile1], "" ,  CELLSTRMAX );
+  strncpy( ncell[pile1][1], "" ,  CELLSTRMAX );
   for( fooi = 1 ; fooi <= 10 ; fooi++)   
-      strncpy( ncell[ pile1 + fooi-1  ], ncell[ pile1 + fooi ] ,  CELLSTRMAX );
+      strncpy( ncell[ pile1 + fooi-1  ][1], ncell[ pile1 + fooi ][1] ,  CELLSTRMAX );
 }
 
 
@@ -1017,7 +1039,7 @@ char *strninput( char *myinitstring )
 
    int strninput_gameover = 0; 
    char strmsg[PATH_MAX];
-   char charo[PATH_MAX];
+   char charotmp[PATH_MAX];
    strncpy( strmsg, myinitstring , PATH_MAX );
 
    int ch ;  int foo ; 
@@ -1086,8 +1108,8 @@ char *strninput( char *myinitstring )
 		        || (( ch == '\'' ) ) 
 	             ) 
 		  {
-                           foo = snprintf( charo, PATH_MAX , "%s%c",  strmsg, ch );
-			   strncpy( strmsg,  charo ,  PATH_MAX );
+                           foo = snprintf( charotmp, PATH_MAX , "%s%c",  strmsg, ch );
+			   strncpy( strmsg,  charotmp ,  PATH_MAX );
 		  }
 		  else if ( ch == 10 ) 
 		  {
@@ -1100,6 +1122,92 @@ char *strninput( char *myinitstring )
      char *r = malloc( sizeof ptr );
      return r ? memcpy(r, ptr, siz ) : NULL;
 }
+
+
+
+void proc_sto_memory()
+{
+     int ch ; int foo; char charo[PATH_MAX]; int foopile ;  
+                          attron( A_REVERSE ); mvprintw( rows-1, 0, "STO (Press Key)?" ); attroff( A_REVERSE );
+                          ch = getch();
+                          if ( ( ch >= 'A' ) && ( ch <= 'Z' ) )
+                          {
+                             foopile = ch -65+1;
+                             attron( A_REVERSE ); mvprintw( rows-2, 0, "[STO] SET %c Variable:", ch ); attroff( A_REVERSE );
+                             foo = snprintf( charo, PATH_MAX , "%s", strninput(  nmemory[foopile]   ));
+                             strncpy( nmemory[ foopile ], charo , PATH_MAX );
+                          }
+                          if ( ( ch >= 'a' ) && ( ch <= 'z' ) )
+                          {
+                             foopile = ch -97+1;
+                             attron( A_REVERSE ); mvprintw( rows-2, 0, "[STO] SET %c Variable:", ch ); attroff( A_REVERSE );
+                             foo = snprintf( charo, PATH_MAX , "%s", strninput( nmemory[foopile] ));
+                             strncpy( nmemory[ foopile ], charo , PATH_MAX );
+                          }
+}
+
+
+
+
+
+
+
+
+void proc_nrpn_spreadsheet()
+{
+   int j, i;  int tableselx = 1; int tablesely = 1;
+   char charo[PATH_MAX]; int foo ;  int foopile; int ch = 0 ; char spcharo[PATH_MAX]; int rruni ; int rrunj; 
+   foo = 1;  tableselx = 1;  tablesely = 1; int spreadsheet_gameover = 0;  char cellval[PATH_MAX]; int toss;
+                          while( spreadsheet_gameover == 0 )
+                          {
+                           erase();
+                           mvprintw( 0,0, "|NRPN (GNU)|Spartrekus|");
+                           for( rruni = 1 ; rruni <= rows-1 ; rruni++ )
+                           for( rrunj = 1 ; rrunj <= 10 ; rrunj++ )
+                           {
+                            attroff(A_REVERSE);
+                            if ( rrunj == tableselx ) if ( rruni == tablesely ) attron(A_REVERSE);
+
+                             toss = snprintf( cellval , PATH_MAX , "%f", te_interp( strinterpreter( ncell[rruni][rrunj]), 0 ));
+                             if ( strcmp( cellval , "nan" ) == 0 )  strncpy( cellval , "?", PATH_MAX );
+                             else if ( strcmp( cellval, "" ) == 0 )     strncpy( cellval , "_", PATH_MAX );
+                             if ( strcmp(ncell[rruni][rrunj] , "" ) == 0 ) strncpy( cellval , "_", PATH_MAX );
+                             mvprintw(rruni, 10*rrunj -8 , "%s",   strcut( cellval , 1 , 8 ) );
+                           }
+                           mvprintw(rows-1, 0, "|CELL #R%d,C%d = %s|", tablesely, tableselx, 
+                           strcut( ncell[tablesely][tableselx] , 1 , cols - 4 ) );
+
+                           ch = getch();
+                           if      ( ch == 27 )   spreadsheet_gameover = 1;
+                           else if ( ch == 'i' )  spreadsheet_gameover = 1; 
+                           else if ( ch == 'm' )  proc_sto_memory();
+                           else if ( ch == '#' )  spreadsheet_gameover = 1; 
+                           else if ( ch == KEY_DOWN )  tablesely++;
+                           else if ( ch == KEY_UP )  tablesely--;
+                           else if ( ch == KEY_LEFT )  tableselx--;
+                           else if ( ch == KEY_RIGHT )  tableselx++;
+                           else if ( ch == 'j' )  tablesely++;
+                           else if ( ch == 'k' )  tablesely--;
+                           else if ( ch == 'h' )  tableselx--;
+                           else if ( ch == 'l' )  tableselx++;
+                           else if ( ch == 'y' )  strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
+                           else if ( ch == 'p' )  strncpy( ncell[tablesely][tableselx], clipboard , CELLSTRMAX );
+                           else if ( ch == 'x' )  
+                           {
+                              strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
+                              strncpy( ncell[tablesely][tableselx], "" , CELLSTRMAX );
+                           }
+                           else if ( ch == 10 )  
+                           {
+                             attron( A_REVERSE ); mvprintw( rows-2, 0, "[SET #R%dC%d CELL]", tablesely, tableselx ); attroff( A_REVERSE );
+                             foo = snprintf( spcharo, PATH_MAX , "%s", strninput( ncell[tablesely][tableselx] ));
+                             strncpy( ncell[tablesely][tableselx], strrlf( spcharo ) , CELLSTRMAX );
+                           }
+                          }
+}
+
+
+
 
 void proc_show_memory( int stposy, int stposx)
 {
@@ -1120,7 +1228,7 @@ int main( int argc, char *argv[])
 
    strncpy( clipboard, "" , CELLSTRMAX );
    char cwd[PATH_MAX];
-   int j, i ; 
+   int j, i ;  
    char charo[PATH_MAX]; 
    int foo ;  int foopile;
 
@@ -1131,12 +1239,23 @@ int main( int argc, char *argv[])
      strncpy( nmemory[i], charo , PATH_MAX );
    }
 
+   // another column 
+   for( i = 1 ; i <= 50 ; i++ )
+   for( j = 2 ; j <= 35 ; j++ )
+   {
+     //foo = snprintf( charo, PATH_MAX , "%d", i );
+     //strncpy( ncell[i][j], charo , CELLSTRMAX );
+     strncpy( ncell[i][j], "" , CELLSTRMAX );
+   }
+
+   // clean
    for( i = 1 ; i <= 50 ; i++ )
    {
-     strncpy( ncell[i], "", CELLSTRMAX );
+     strncpy( ncell[i][1], "", CELLSTRMAX );
      strncpy( ncell_clip[i], "", CELLSTRMAX );
      ncell_colorscheme[i] = 1;
    }
+
 
    initscr();	
    curs_set( 0 );
@@ -1191,17 +1310,17 @@ int main( int argc, char *argv[])
                 printw( " " );
 
               if ( nrpn_show_results == 0 ) 
-                   printw( "%d: %s", i, ncell[i] );
+                   printw( "%d: %s", i, ncell[i][1] );
               else if ( nrpn_show_results == 1 ) 
               {
-                   foo = snprintf( charo, PATH_MAX , "%f", te_interp( strinterpreter( strconvtxt( ncell[ i ] )) , 0));
+                   foo = snprintf( charo, PATH_MAX , "%f", te_interp( strinterpreter( strconvtxt( ncell[ i ][1] )) , 0));
        	           strncpy( strresult, charo, PATH_MAX );
                    if ( strcmp( strresult, "" ) == 0 ) 
-                      printw( "%d: %s", i, ncell[i]);
+                      printw( "%d: %s", i, ncell[i][1]);
                    else if ( strcmp( strresult, "nan" ) == 0 ) 
-                      printw( "%d: %s", i, ncell[i]);
+                      printw( "%d: %s", i, ncell[i][1]);
                    else 
-                      printw( "%d: %s = %s", i, ncell[i], strresult );
+                      printw( "%d: %s = %s", i, ncell[i][1], strresult );
               }
            }
            attroff( A_REVERSE ); 
@@ -1214,14 +1333,14 @@ int main( int argc, char *argv[])
 
 
            // Interpreter line 
-           foo = snprintf( charo, PATH_MAX , " Interpreter: %s", strinterpreter( strconvtxt( ncell[pile])));
+           foo = snprintf( charo, PATH_MAX , " Interpreter: %s", strinterpreter( strconvtxt( ncell[pile][1])));
 
 	   strncpy( strresult, charo, PATH_MAX );
            mvprintw( rows-2, 2, "%s", strresult );
 
 
            // Result line 
-           foo = snprintf( charo, PATH_MAX , " Result: %f", te_interp( strinterpreter( strconvtxt( ncell[pile]) ) , 0));
+           foo = snprintf( charo, PATH_MAX , " Result: %f", te_interp( strinterpreter( strconvtxt( ncell[pile][1]) ) , 0));
 
 	   strncpy( strresult, charo, PATH_MAX );
            mvprintw( rows-1, 2, "%s", strresult );
@@ -1241,13 +1360,13 @@ int main( int argc, char *argv[])
     else if ( ch == KEY_UP )
     {
         pile++;
-        strncpy( strmsg, ncell[ pile ] ,  PATH_MAX );
+        strncpy( strmsg, ncell[ pile ][1] ,  PATH_MAX );
     }
 
     else if ( ch == KEY_DOWN )
     {
         pile--;
-        strncpy( strmsg, ncell[ pile ] ,  PATH_MAX );
+        strncpy( strmsg, ncell[ pile ][1] ,  PATH_MAX );
     }
 
 		  else if ( ( ch == KEY_BACKSPACE ) || ( ch == 4  ) )
@@ -1347,9 +1466,9 @@ int main( int argc, char *argv[])
 
 		 else if ( (mode == 2 ) && ( ch == 10 ) )
                  {
-		      strncpy( foostring,  ncell[ pile ]  ,  PATH_MAX );
+		      strncpy( foostring,  ncell[ pile ][1]  ,  PATH_MAX );
 		      strncpy( strmsg ,  strninput( foostring ) ,  PATH_MAX );
-                      strncpy( ncell[ pile ] , strmsg, CELLSTRMAX );
+                      strncpy( ncell[ pile ][1] , strmsg, CELLSTRMAX );
 		      strncpy( strmsg, "" ,  PATH_MAX );
                       pile++;
                       if ( pile >= pilemax ) pilemax++;
@@ -1364,7 +1483,7 @@ int main( int argc, char *argv[])
 		  
 	          else if (( mode == 1 ) && ( ch == 10 ))
 		  {
-                      strncpy( ncell[ pile ] , strmsg, CELLSTRMAX );
+                      strncpy( ncell[ pile ][1] , strmsg, CELLSTRMAX );
 		      strncpy( strmsg, "" ,  PATH_MAX );
                       pile++;
                       if ( pile >= pilemax ) pilemax++;
@@ -1385,17 +1504,17 @@ int main( int argc, char *argv[])
                     piles_paste();
 
 		  else if ( ch == KEY_F(6) ) 
-                       strncpy( ncell[ pile ], clipboard , CELLSTRMAX );
+                       strncpy( ncell[ pile ][1], clipboard , CELLSTRMAX );
 		  else if ( ch == KEY_F(5) ) 
-                       strncpy( clipboard, ncell[ pile ] , CELLSTRMAX );
+                       strncpy( clipboard, ncell[ pile ][1] , CELLSTRMAX );
 
 		  else if ( ch == 16 )  //ctrl+p
 		  {
-                       strncpy( ncell[ pile ], clipboard , CELLSTRMAX );
+                       strncpy( ncell[ pile ][1], clipboard , CELLSTRMAX );
                   }
 		  else if ( ch == 25 ) //ctrl+y
 		  {
-                       strncpy( clipboard, ncell[ pile ] , CELLSTRMAX );
+                       strncpy( clipboard, ncell[ pile ][1] , CELLSTRMAX );
                   }
 
 	         else if (( mode == 2 ) && ( ch == '+' ))
@@ -1425,16 +1544,19 @@ int main( int argc, char *argv[])
                        mvprintw( 3,0, "2: Show Results" ); 
                        mvprintw( 4,0, "3: Show Memories (Variables)" ); 
                        mvprintw( 5,0, "4: Quick View Memories (Variables)" ); 
+                       mvprintw( 6,0, "5: Quick Spreadsheet Table" ); 
 
                        ch = getch();
 
                        if ( ch ==  '1' )
-                       if ( nrpn_text_bold == 1 )
-                         nrpn_text_bold = 0; 
-                       else 
-                         nrpn_text_bold = 1;
+                       {
+                         if ( nrpn_text_bold == 1 )
+                           nrpn_text_bold = 0; 
+                         else 
+                           nrpn_text_bold = 1;
+                       }
 
-                       if ( ch ==  '2' )
+                       else if ( ch ==  '2' )
                        {
                          if ( nrpn_show_results == 1 )
                            nrpn_show_results = 0; 
@@ -1442,7 +1564,7 @@ int main( int argc, char *argv[])
                             nrpn_show_results = 1;
                        }
 
-                       if ( ch ==  '4' )
+                       else if ( ch ==  '4' )
                        {
                           erase();
                           for( i = 1 ; i <= 60 ; i++ )
@@ -1450,7 +1572,12 @@ int main( int argc, char *argv[])
                           getch();
                        }
 
-                       if ( ch == '3' )
+                       else if ( ch ==  '5' )
+                       {  
+                           proc_nrpn_spreadsheet();
+                       }
+
+                       else if ( ch == '3' )
                        {
                          if ( nrpn_show_memory == 1 )
                             nrpn_show_memory = 0; 
@@ -1470,53 +1597,43 @@ int main( int argc, char *argv[])
     }
 
     else if ( ( mode == 2 ) && ( ch == 'y' ) )
-          strncpy( clipboard, ncell[ pile ] , CELLSTRMAX );
+          strncpy( clipboard, ncell[ pile ][1] , CELLSTRMAX );
 
     else if ( ( mode == 2 ) && ( ch == 'x' ) )
     {
-          strncpy( clipboard, ncell[ pile ] , CELLSTRMAX );
-          strncpy( ncell[ pile ], "" , CELLSTRMAX );
+          strncpy( clipboard, ncell[ pile ][1] , CELLSTRMAX );
+          strncpy( ncell[ pile ][1], "" , CELLSTRMAX );
     }
 
     else if ( ( mode == 2 ) && ( ch == 'p' ) )
-            strncpy( ncell[ pile ], clipboard , CELLSTRMAX );
+            strncpy( ncell[ pile ][1], clipboard , CELLSTRMAX );
 
     else if ( ( mode == 2 ) && ( ch == 'k' ) )
     {
         pile++;
-        strncpy( strmsg, ncell[ pile ] ,  PATH_MAX );
+        strncpy( strmsg, ncell[ pile ][1] ,  PATH_MAX );
     }
 
     else if ( ( mode == 2 ) && ( ch == 'j' ) )
     {
         pile--;
-        strncpy( strmsg, ncell[ pile ] ,  PATH_MAX );
+        strncpy( strmsg, ncell[ pile ][1] ,  PATH_MAX );
     }
 
     else if ( ( mode == 2 ) && ( ch == '?' ) )
            nrpn_help();
 
+
                        else if ( ( mode == 2 ) && ( ch ==  'm' ) )
                        {
-                          attron( A_REVERSE ); mvprintw( rows-1, 0, "STO (Press Key)?" ); attroff( A_REVERSE );
-                          ch = getch();
-                          if ( ( ch >= 'A' ) && ( ch <= 'Z' ) )
-                          {
-                             foopile = ch -65+1;
-                             attron( A_REVERSE ); mvprintw( rows-2, 0, "[STO] SET %c Variable:", ch ); attroff( A_REVERSE );
-                             foo = snprintf( charo, PATH_MAX , "%s", strninput(  nmemory[foopile]   ));
-                             strncpy( nmemory[ foopile ], charo , PATH_MAX );
-                          }
-                          if ( ( ch >= 'a' ) && ( ch <= 'z' ) )
-                          {
-                             foopile = ch -97+1;
-                             attron( A_REVERSE ); mvprintw( rows-2, 0, "[STO] SET %c Variable:", ch ); attroff( A_REVERSE );
-                             foo = snprintf( charo, PATH_MAX , "%s", strninput( nmemory[foopile] ));
-                             strncpy( nmemory[ foopile ], charo , PATH_MAX );
-                          }
+                         proc_sto_memory();
                        }
 
+                       else if ( ( mode == 2 ) && ( ch ==  '#' ) )
+                          proc_nrpn_spreadsheet();
 
+
+                      /*
                        else if ( ( mode == 2 ) && ( ch ==  '#' ) )
                        {
                           erase();
@@ -1538,12 +1655,9 @@ int main( int argc, char *argv[])
                              erase();
                              proc_show_memory(0,0); getch();
                           }
+                         }
+                         */
 
-
-
-
-
-                       }
 
    }
 
