@@ -1385,6 +1385,7 @@ void proc_nrpn_spreadsheet()
                            else if ( ch == 'h' )  tableselx--;
                            else if ( ch == 'l' )  tableselx++;
                            else if ( ch == 'y' )  strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
+                           else if ( ch == KEY_F(5) )  strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
                            else if ( ch == 'p' )  strncpy( ncell[tablesely][tableselx], clipboard , CELLSTRMAX );
                            else if ( ch == 'c' )  //clone cell by pass cell R,C 
                            { 
@@ -1397,7 +1398,7 @@ void proc_nrpn_spreadsheet()
                               strncat( clipboard , "]" , CELLSTRMAX - strlen( clipboard ) -1 );
                            }
 		           else if ( ch == KEY_F(1) ) nrpn_help();
-                           else if ( ( ch == 'P' )  &&  ( strcmp( clipboard, "" ) != 0 ) )
+                           else if ( (( ch == KEY_F(6)) || ( ch == 'P' ))  &&  ( strcmp( clipboard, "" ) != 0 ) )
                            { 
                              strncpy( spcharo, strcopyformulas( clipboard ), PATH_MAX ); 
                              strncpy( ncell[tablesely][tableselx], spcharo , CELLSTRMAX );
