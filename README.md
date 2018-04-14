@@ -6,3 +6,9 @@ nrpn for terminal using ncurses library (superbe RPN calc, sort of minimalist HP
 
 ![](https://raw.githubusercontent.com/spartrekus/nrpn/master/nrpn-calls.png)
 
+
+
+![](https://raw.githubusercontent.com/spartrekus/nrpn/master/nrpn-spreadsheet.png)
+
+
+
