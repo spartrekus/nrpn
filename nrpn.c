@@ -885,7 +885,6 @@ char *strinterpreter(char *str)
       int fonmemln ;  
       for(i=0; str[i]!='\0'; i++)
       {
-        /*
         // working
         if ( str[i] == '$' ) 
         {
@@ -903,6 +902,7 @@ char *strinterpreter(char *str)
 	  }
 	}
 
+        /*
         // working
         if ( str[i] == '$' ) 
         {
@@ -1155,9 +1155,11 @@ void nrpn_help( )
    mvprintw( i++, 0, "Up/Down: Change stack ");
    mvprintw( i++, 0, "b: Turn Reverse Current Stack  (in visual mode)");
    mvprintw( i++, 0, "hjkl: Moving    (in visual mode)");
-   mvprintw( i++, 0, "y,p: Copy/Paste (in visual mode)");
    mvprintw( i++, 0, "c: Copy cell location in clipboard (in visual mode)");
-   mvprintw( i++, 0, "P: Paste formula from clipboard with automatic increment (in visual mode)");
+   mvprintw( i++, 0, "p: Paste (in visual mode)");
+   mvprintw( i++, 0, "y: Copy (in visual mode)");
+   mvprintw( i++, 0, "F(5): Copy (in visual mode)");
+   mvprintw( i++, 0, "P or F(6): Paste formula from clipboard with automatic increment (in visual mode)");
    mvprintw( i++, 0, " " );
    mvprintw( i++, 0, "(PLEASE READ *IMPORTANT*: This Software is in development with no warranty, it may have bugs, no support, possible errors, ...)" );
    getch();
@@ -1310,6 +1312,73 @@ void proc_sto_memory()
 
 
 
+void proc_nrpn_spreadsheet_tiny()
+{
+   if ( nrpn_text_bold == 1 ) attron( A_BOLD); else attroff( A_BOLD);
+
+   int j, i;  int tableselx = 1; int tablesely = 1;
+   char charo[PATH_MAX]; int foo ;  int foopile; int ch = 0 ; char spcharo[PATH_MAX]; int rruni ; int rrunj; 
+   foo = 1;  tableselx = 1;  tablesely = 1; int spreadsheet_gameover = 0;  char cellval[PATH_MAX]; int toss;
+                          while( spreadsheet_gameover == 0 )
+                          {
+                           if ( tableselx <= 1) tableselx = 1; 
+                           if ( tablesely <= 1) tablesely = 1; 
+                           erase();
+                           mvprintw( 0,0, "|NRPN (GNU)|Spartrekus|");
+
+                           for( rruni = 1 ; rruni <= rows-1 ; rruni++ )
+                           mvprintw( 1+ rruni, 0 , "R%d", rruni );
+
+                           for( rrunj = 1 ; rrunj <= 10 ; rrunj++ )
+                           mvprintw( 1, 3+10*rrunj -8 , "C%d", rrunj );
+
+                           for( rruni = 1 ; rruni <= rows-1 ; rruni++ )
+                           for( rrunj = 1 ; rrunj <= 10 ; rrunj++ )
+                           {
+                            attroff(A_REVERSE);
+                            if ( rrunj == tableselx ) if ( rruni == tablesely ) attron(A_REVERSE);
+
+                               toss = snprintf( cellval , PATH_MAX , "%f", te_interp( ncell[rruni][rrunj], 0 ) );
+                               if ( strcmp( cellval , "nan" ) == 0 )     strncpy( cellval , "?", PATH_MAX );
+                               else if ( strcmp( cellval, "" ) == 0 )    strncpy( cellval , "_", PATH_MAX );
+                               if ( strcmp(ncell[rruni][rrunj] , "" ) == 0 ) strncpy( cellval , "_", PATH_MAX );
+                               mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%s",   strcut( cellval , 1 , 8 ) );
+                           }
+
+                           mvprintw(rows-1, 0, "|CELL #R%d,C%d = %s|", tablesely, tableselx, 
+                           strcut( ncell[tablesely][tableselx] , 1 , cols - 4 ) );
+
+                           ch = getch();
+                           if      ( ch == 27 )   spreadsheet_gameover = 1;
+                           else if ( ch == 'i' )  spreadsheet_gameover = 1; 
+                           else if ( ch == KEY_DOWN )  tablesely++;
+                           else if ( ch == KEY_UP )  tablesely--;
+                           else if ( ch == KEY_LEFT )  tableselx--;
+                           else if ( ch == KEY_RIGHT )  tableselx++;
+                           else if ( ch == 'j' )  tablesely++;
+                           else if ( ch == 'k' )  tablesely--;
+                           else if ( ch == 'h' )  tableselx--;
+                           else if ( ch == 'l' )  tableselx++;
+                           else if ( ch == 'y' )  strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
+                           else if ( ch == 'p' )  strncpy( ncell[tablesely][tableselx], clipboard , CELLSTRMAX );
+                           else if  ( ( ch == 10 ) || ( ch == '=' ) )
+                           {
+                             attron( A_REVERSE ); mvprintw( rows-2, 0, "[SET #R%dC%d CELL]", tablesely, tableselx ); attroff( A_REVERSE );
+                             foo = snprintf( spcharo, PATH_MAX , "%s", strninput( ncell[tablesely][tableselx] ));
+                             strncpy( ncell[tablesely][tableselx], strrlf( spcharo ) , CELLSTRMAX );
+                           }
+                          }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 void proc_nrpn_spreadsheet()
@@ -1385,8 +1454,8 @@ void proc_nrpn_spreadsheet()
                            else if ( ch == 'h' )  tableselx--;
                            else if ( ch == 'l' )  tableselx++;
                            else if ( ch == 'y' )  strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
-                           else if ( ch == KEY_F(5) )  strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
                            else if ( ch == 'p' )  strncpy( ncell[tablesely][tableselx], clipboard , CELLSTRMAX );
+                           else if ( ch == KEY_F(5) )  strncpy( clipboard, ncell[tablesely][tableselx], CELLSTRMAX );
                            else if ( ch == 'c' )  //clone cell by pass cell R,C 
                            { 
                               strncpy( clipboard , "$[" , CELLSTRMAX);
@@ -1403,6 +1472,7 @@ void proc_nrpn_spreadsheet()
                              strncpy( spcharo, strcopyformulas( clipboard ), PATH_MAX ); 
                              strncpy( ncell[tablesely][tableselx], spcharo , CELLSTRMAX );
                              strncpy( clipboard , spcharo , CELLSTRMAX );
+                             tablesely++;
                            }
                            else if ( ch == 'x' )  
                            {
@@ -1754,7 +1824,8 @@ int main( int argc, char *argv[])
                        mvprintw( 3,0, "2: Show Results" ); 
                        mvprintw( 4,0, "3: Show Memories (Variables)" ); 
                        mvprintw( 5,0, "4: Quick View Memories (Variables)" ); 
-                       mvprintw( 6,0, "5: Quick Spreadsheet Table" ); 
+                       mvprintw( 6,0, "5: Quick Spreadsheet Table (no interpreter)" ); 
+                       mvprintw( 7,0, "6: Spreadsheet Table" ); 
 
                        ch = getch();
 
@@ -1783,9 +1854,10 @@ int main( int argc, char *argv[])
                        }
 
                        else if ( ch ==  '5' )
-                       {  
+                           proc_nrpn_spreadsheet_tiny();
+
+                       else if ( ch ==  '6' )
                            proc_nrpn_spreadsheet();
-                       }
 
                        else if ( ch == '3' )
                        {
