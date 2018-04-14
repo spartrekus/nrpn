@@ -792,8 +792,84 @@ int termsize()
 
 
 
-char *strinterpreter();
+////////////////////////////////////////////////////////////////////
+char *strrlf(char *str) 
+{     // copyleft, C function made by Spartrekus 
+      char ptr[strlen(str)+1];
+      int i,j=0;
+      for(i=0; str[i]!='\0'; i++)
+      {
+        if (str[i] != '\n' && str[i] != '\n') 
+        ptr[j++]=str[i];
+      } 
+      ptr[j]='\0';
+      size_t siz = sizeof ptr ; 
+      char *r = malloc( sizeof ptr );
+      return r ? memcpy(r, ptr, siz ) : NULL;
+}
 
+////////////////////////////////////////////////////////////////////
+char *strcut( char *str , int myposstart, int myposend )
+{     // copyleft, C function made by Spartrekus 
+      char ptr[strlen(str)+1];
+      int i,j=0;
+      for(i=0; str[i]!='\0'; i++)
+      {
+        if ( ( str[i] != '\0' ) && ( str[i] != '\0') )
+         if ( ( i >=  myposstart-1 ) && (  i <= myposend-1 ) )
+           ptr[j++]=str[i];
+      } 
+      ptr[j]='\0';
+      size_t siz = sizeof ptr ; 
+      char *r = malloc( sizeof ptr );
+      return r ? memcpy(r, ptr, siz ) : NULL;
+}
+
+
+
+
+
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+char *strsplit(char *str , int mychar , int myitemfoo )
+{  
+      char ptr[strlen(str)+1];
+      int myitem = myitemfoo +1;
+      int i,j=0;
+      int fooitem = 0;
+      for(i=0; str[i]!='\0'; i++)
+      {
+        if ( str[i] == mychar ) 
+           fooitem++;
+        else if ( str[i] != mychar &&  fooitem == myitem-2  ) 
+           ptr[j++]=str[i];
+      } 
+      ptr[j]='\0';
+      size_t siz = sizeof ptr ; 
+      char *r = malloc( sizeof ptr );
+      return r ? memcpy(r, ptr, siz ) : NULL;
+}
+
+/// customed one
+char *strdelimit(char *str , int mychar1, int mychar2,  int mycol )
+{ 
+      char ptr[strlen(str)+1];
+      char ptq[strlen(str)+1];
+      strncpy( ptr, strsplit( str, mychar1 , mycol+1 ), strlen(str)+1 );
+      strncpy( ptq, strsplit( ptr, mychar2 , 1 ), strlen(str)+1 );
+      size_t siz = sizeof ptq ; 
+      char *r = malloc( sizeof ptq );
+      return r ? memcpy(r, ptq, siz ) : NULL;
+}
+
+
+
+
+
+
+
+char *strinterpreter();
 
 /////////////////////////////////
 /////////////////////////////////
@@ -802,12 +878,15 @@ char *strinterpreter(char *str)
 {  
       char ptr[ PATH_MAX ];  /// to have enough space
       char fooline[PATH_MAX];
+      char cellmiddle[PATH_MAX];
       int i,j=0;  int toxi = 0; 
+      int dos = 0; int dospos = 0; int dosfnsep = 0;
       int fonmem ; 
-      int fonmemln ; 
+      int fonmemln ;  
       for(i=0; str[i]!='\0'; i++)
       {
-
+        /*
+        // working
         if ( str[i] == '$' ) 
         {
           if ( str[i+1] == '[' ) 
@@ -824,6 +903,7 @@ char *strinterpreter(char *str)
 	  }
 	}
 
+        // working
         if ( str[i] == '$' ) 
         {
           if ( str[i+1] == '[' ) 
@@ -837,6 +917,40 @@ char *strinterpreter(char *str)
                ptr[j++]=fooline[toxi];
             i++; i++; i++; i++;
             i++; i++; 
+	  }
+	} */
+
+
+        // experimental 
+        if ( str[i] == '$' ) 
+        if ( strlen( str ) >= 3 )
+        {
+          if ( str[i+1] == '[' ) 
+	  { 
+            dospos = 0; dosfnsep = 0;
+            for(dos=i; str[dos]!='\0'; dos++)
+            { 
+               if ( str[ dos ] == ',' )  dosfnsep = 1;
+               if ( dospos == 0 ) if ( str[ dos ] == ']' )  dospos = dos;
+            }
+
+            strncpy( cellmiddle, strcut( str , i+1 , dospos+1 ) , PATH_MAX );
+            if ( dosfnsep == 1 )
+            {
+               fonmem =  atoi( strdelimit( cellmiddle, '[', ',' , 1 ));
+               fonmemln =    atoi( strdelimit( cellmiddle, ',', ']' , 1 ));
+            }
+            else if ( dosfnsep == 0 )
+            {
+               fonmem =  atoi( strdelimit( cellmiddle, '[', ']' , 1 ));
+               fonmemln = 1;
+            }
+            strncpy( fooline, strinterpreter( ncell[fonmem][fonmemln] ) , PATH_MAX );
+
+            for(toxi=0; fooline[toxi]!='\0'; toxi++)
+               ptr[j++]=fooline[toxi];
+
+            i = dospos+1;
 	  }
 	}
 
@@ -915,43 +1029,6 @@ char *strconvtxt(char *str)
 
 
 
-
-
-
-
-
-////////////////////////////////////////////////////////////////////
-char *strrlf(char *str) 
-{     // copyleft, C function made by Spartrekus 
-      char ptr[strlen(str)+1];
-      int i,j=0;
-      for(i=0; str[i]!='\0'; i++)
-      {
-        if (str[i] != '\n' && str[i] != '\n') 
-        ptr[j++]=str[i];
-      } 
-      ptr[j]='\0';
-      size_t siz = sizeof ptr ; 
-      char *r = malloc( sizeof ptr );
-      return r ? memcpy(r, ptr, siz ) : NULL;
-}
-
-////////////////////////////////////////////////////////////////////
-char *strcut( char *str , int myposstart, int myposend )
-{     // copyleft, C function made by Spartrekus 
-      char ptr[strlen(str)+1];
-      int i,j=0;
-      for(i=0; str[i]!='\0'; i++)
-      {
-        if ( ( str[i] != '\0' ) && ( str[i] != '\0') )
-         if ( ( i >=  myposstart-1 ) && (  i <= myposend-1 ) )
-           ptr[j++]=str[i];
-      } 
-      ptr[j]='\0';
-      size_t siz = sizeof ptr ; 
-      char *r = malloc( sizeof ptr );
-      return r ? memcpy(r, ptr, siz ) : NULL;
-}
 
 
 void piles_copy( ) 
@@ -1177,14 +1254,14 @@ void proc_nrpn_spreadsheet()
                            {
                             attroff(A_REVERSE);
                             if ( rrunj == tableselx ) if ( rruni == tablesely ) attron(A_REVERSE);
-
-                             if ( ncell[rruni][rrunj][0] == '\'' )
+                            /* if ( ncell[rruni][rrunj][0] == '\'' )
                              {
                                if ( strcmp( cellval, "" ) == 0 )     strncpy( cellval , "_", PATH_MAX );
                                strncpy( cellval , ncell[rruni][rrunj] , PATH_MAX );
                                mvprintw( 1+ rruni, 3+10*rrunj -8 , "%s", strcut( cellval, 2, strlen( cellval) ));
                              }
                              else 
+                             */
                              {
                                toss = snprintf( cellval , PATH_MAX , "%f", te_interp( strinterpreter( ncell[rruni][rrunj]), 0 ));
                                if ( strcmp( cellval , "nan" ) == 0 )  strncpy( cellval , "?", PATH_MAX );
@@ -1193,6 +1270,20 @@ void proc_nrpn_spreadsheet()
                                mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%s",   strcut( cellval , 1 , 8 ) );
                              }
                            }
+
+                           for( rruni = 1 ; rruni <= rows-1 ; rruni++ )
+                           for( rrunj = 1 ; rrunj <= 10 ; rrunj++ )
+                           {
+                            attroff(A_REVERSE);
+                            if ( rrunj == tableselx ) if ( rruni == tablesely ) attron(A_REVERSE);
+                             if ( ncell[rruni][rrunj][0] == '\'' )
+                             {
+                               if ( strcmp( cellval, "" ) == 0 )     strncpy( cellval , "_", PATH_MAX );
+                               strncpy( cellval , ncell[rruni][rrunj] , PATH_MAX );
+                               mvprintw( 1+ rruni, 3+10*rrunj -8 , "%s", strcut( cellval, 2, strlen( cellval) ));
+                             }
+                           }
+
                            mvprintw(rows-1, 0, "|CELL #R%d,C%d = %s|", tablesely, tableselx, 
                            strcut( ncell[tablesely][tableselx] , 1 , cols - 4 ) );
 
