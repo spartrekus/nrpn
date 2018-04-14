@@ -1,5 +1,5 @@
 # nrpn
-nrpn for terminal using ncurses library (superbe RPN calc, sort of minimalist HPCALC clone for terminal and scientists)
+nrpn for terminal using ncurses library (superbe RPN calc, sort of minimalist HPCALC clone for terminal, GNU software for scientists)
 
 
 ![](https://raw.githubusercontent.com/spartrekus/nrpn/master/nrpn/nrpn.png)
