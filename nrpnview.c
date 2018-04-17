@@ -10,7 +10,7 @@
 #include <limits.h>
 #include <ncurses.h>
 //#include <sys/ioctl.h>
-#include <stdio.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
@@ -23,10 +23,24 @@
 int rows, cols;
 char ncell[CELLYMAX+1][CELLXMAX+1][1024];
 char clipboard[1024];
+char nrpn_filename[PATH_MAX];
 int pile = 1;
 int pilemax = 1;
 
 
+
+int finditeration(char *str)
+{  
+      int i,j=0;
+      int foundspace = 0;
+      for(i=0; str[i]!='\0'; i++)
+      {
+        if ( foundspace == 0 ) 
+         if ( str[i] == '=' ) 
+           foundspace = i;
+      } 
+      return foundspace;
+} 
 
 
 
@@ -807,10 +821,11 @@ char *strcut( char *str , int myposstart, int myposend )
            ptr[j++]=str[i];
       } 
       ptr[j]='\0';
+      //return ptr;
       size_t siz = sizeof ptr ; 
       char *r = malloc( sizeof ptr );
       return r ? memcpy(r, ptr, siz ) : NULL;
-      free( ptr );
+      //free( ptr );
 }
 
 /////////////////////////////////////////////////////////////
@@ -987,13 +1002,14 @@ char *strinterpreter(char *str)
 
       } 
       ptr[j]='\0';
+
       size_t siz = 1 + sizeof ptr ; 
       char *r = malloc( 1 +  sizeof ptr );
       return r ? memcpy(r, ptr, siz ) : NULL;
-
-      free( ptr ); 
-      free( fooline ); 
-      free( cellmiddle );
+      //free( ptr ); 
+      //free( fooline ); 
+      //free( cellmiddle );
+      //return ptr;
 }
 
 
@@ -1095,6 +1111,148 @@ char *strninput( char *myinitstring )
 
 
 
+////////////////////////////////////
+////////////////////////////////////
+////////////////////////////////////
+void proc_nrpn_spreadsheet_ls()
+{
+   int proc_gameover = 0;
+   int ch = 0;
+   char stringfilter[PATH_MAX];
+   strncpy( stringfilter, "", PATH_MAX );
+   while( proc_gameover == 0)
+   {
+     erase();
+     attron( A_REVERSE );
+     for ( ch = 0 ; ch <= cols-1 ; ch++)  
+       mvprintw( 0, ch, " " );
+     mvprintw( 0, 0, "|NRPN|  Esc: Cancel" );
+     attroff( A_REVERSE );
+     DIR *dirp; int posy = 1;
+     struct dirent *dp;
+     dirp = opendir( "." );
+     while  ((dp = readdir( dirp )) != NULL ) 
+     {
+        if ( strcmp( stringfilter, "" ) == 0 ) 
+          mvprintw( posy++, 0, "%s\n", dp->d_name );
+        else if ( strcmp( stringfilter, "" ) != 0 ) 
+        {
+           if ( strstr( dp->d_name , stringfilter ) != 0 ) 
+              mvprintw( posy++, 0, "%s\n", dp->d_name );
+        }
+     }
+     closedir( dirp );
+     ch = getch();
+     if ( ch == 'i' )  proc_gameover = 1;
+     else if ( ch == 'f' ) strncpy( stringfilter, strninput( "" ) , PATH_MAX );
+     else if ( ch == 27 )  proc_gameover = 1;
+   }
+}
+
+
+
+
+
+/////////////////////////////////////////////
+void proc_nrpn_spreadsheet_rpn( char *myfile )
+{
+     FILE *fp; 
+     int rruni, rrunj; 
+     strncpy( nrpn_filename , myfile , PATH_MAX );
+     fp = fopen( nrpn_filename , "rb+" );
+     int fetchi;  
+     char fetchline[CELLSTRMAX];
+     char fetchlinetmp[CELLSTRMAX];
+     while( !feof(fp) ) 
+     {
+          fgets(fetchlinetmp, CELLSTRMAX, fp); 
+          strncpy( fetchline, "" , CELLSTRMAX );
+          for( fetchi = 0 ; ( fetchi <= strlen( fetchlinetmp ) ); fetchi++ )
+            if ( fetchlinetmp[ fetchi ] != '\n' )
+              fetchline[fetchi]=fetchlinetmp[fetchi];
+
+          fetchi = finditeration( fetchline ) +2;
+
+          if ( strstr( fetchline, "!CELL" ) != 0 ) 
+             strtocell( atoi( strdelimit( fetchline, '[', ',' , 1 )) , atoi( strdelimit( fetchline, ',', ']' , 1 )) , strcut( fetchline, fetchi, strlen( fetchline )) );
+     }
+     fclose(fp);
+}
+
+
+
+
+
+////////////////////////////////////
+////////////////////////////////////
+////////////////////////////////////
+void proc_nrpn_spreadsheet_load( )
+{
+  char charo[PATH_MAX];
+  attron( A_REVERSE );
+  mvprintw( rows-2, 0, "Open from File ?" );
+  strncpy( charo , strninput( nrpn_filename ) , PATH_MAX );
+  if ( strcmp( charo , "" ) != 0 ) 
+  {
+     proc_nrpn_spreadsheet_rpn( charo );
+  }
+  else 
+    mvprintw(  rows-1, 0, "Operation Abort");
+  //getch();
+  attroff( A_REVERSE );
+}
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////
+////////////////////////////////////
+////////////////////////////////////
+void proc_nrpn_spreadsheet_save()
+{
+   attron( A_REVERSE );
+   FILE *fp; char charo[PATH_MAX];
+   int rruni, rrunj; 
+   mvprintw( rows-2, 0, "Save to File ?" );
+   strncpy( charo , strninput( nrpn_filename ) , PATH_MAX );
+   if ( strcmp( charo , "" ) != 0 ) 
+   {
+     strncpy( nrpn_filename , charo , PATH_MAX );
+     fp = fopen( nrpn_filename , "wb+" );
+     fputs( "#NRPN File.\n" , fp );
+     fputs( "\n" , fp );
+     for( rruni = 1 ; rruni <= CELLYMAX ; rruni++ )
+      for( rrunj = 1 ; rrunj <= CELLXMAX ; rrunj++ )
+      {
+        if ( strcmp( ncell[rruni][rrunj] , "" ) != 0 ) 
+        {
+          fputs( "!CELL[" , fp ); 
+          snprintf( charo , PATH_MAX , "%d",  rruni );
+          fputs( charo , fp ); 
+          fputs( "," , fp ); 
+          snprintf( charo , PATH_MAX , "%d",  rrunj );
+          fputs( charo , fp ); 
+          fputs( "]=" , fp ); 
+          fputs( ncell[ rruni] [rrunj ], fp );
+          fputs( "\n" , fp );
+        }
+      }
+      fclose( fp );
+      mvprintw(  rows-1, 0, "Saved to %s.", nrpn_filename );
+    }
+  else 
+    mvprintw(  rows-1, 0, "Operation Abort");
+  getch();
+  attroff( A_REVERSE );
+}
+
+
 
 
 
@@ -1135,6 +1293,7 @@ void proc_nrpn_spreadsheet_verytiny()
                    mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%g", te_interp( ncell[rruni][rrunj] , 0 ) );
             }
 
+            attroff(A_REVERSE);
             mvprintw( rows-1, cols-1, "%d", ch );
             ch = getch();
             if      ( ch == 27 )   spreadsheet_gameover = 1;
@@ -1206,8 +1365,8 @@ void proc_nrpn_spreadsheet_tiny()
             if ( tablesely <= 1 ) tablesely = 1; 
             if ( tableselx >= CELLXMAX ) tableselx =  CELLXMAX ; 
             if ( tablesely >= CELLYMAX ) tablesely =  CELLYMAX ; 
-            erase();
             attroff(A_REVERSE);
+            erase();
             mvprintw( 0, 0, "|NRPN (Tiny)| Spartrekus " );
             for( rruni = 1 ; rruni <= CELLYMAX ; rruni++ ) mvprintw( 1+ rruni, 0 , "R%d", rruni );
             for( rrunj = 1 ; rrunj <= CELLXMAX ; rrunj++ ) mvprintw( 1, 3+10*rrunj -8 , "C%d", rrunj );
@@ -1237,12 +1396,14 @@ void proc_nrpn_spreadsheet_tiny()
 
             attroff(A_REVERSE);
             mvprintw( rows-1, 0, "[%d,%d] = %s ", tablesely, tableselx, ncell[ tablesely][tableselx ] );
+            attroff(A_REVERSE);
             if      ( active_interpreter == 1 ) printw( "#" );
             else if ( active_interpreter == 2 ) printw( "C" );
             mvprintw( rows-1, cols-1, "%d", ch );
             ch = getch();
             if      ( ch == 27 )   spreadsheet_gameover = 1;
             else if ( ch == 'i' )  spreadsheet_gameover = 1; 
+            else if ( ch == 9 )  spreadsheet_gameover = 1; 
             else if ( ch == 10 ) 
             {
                  attron( A_REVERSE ); mvprintw( rows-2, 0, "[SET #R%dC%d CELL]", tablesely, tableselx ); attroff( A_REVERSE );
@@ -1328,6 +1489,7 @@ void proc_nrpn_spreadsheet_tiny()
 int main( int argc, char *argv[])
 {
    strncpy( clipboard, "" , CELLSTRMAX );
+   strncpy( nrpn_filename, "file.rpn" , CELLSTRMAX );
    char cwd[PATH_MAX];
    int j, i ;  
    char charo[PATH_MAX]; 
@@ -1336,6 +1498,7 @@ int main( int argc, char *argv[])
    for( i = 0 ; i <= CELLYMAX ; i++ )
    for( j = 0 ; j <= CELLXMAX ; j++ )
      strncpy( ncell[i][j], "" , CELLSTRMAX );
+
 
    initscr();	
    curs_set( 0 );
@@ -1360,6 +1523,13 @@ int main( int argc, char *argv[])
    strncpy( strmsg, "", PATH_MAX );
    strncpy( strresult, "", PATH_MAX );
 
+
+   if ( argc >= 2)
+   {
+       for( i = 1 ; i < argc-1 ; i++) printf( "Arg: %s\n" , argv[ i ] );
+       proc_nrpn_spreadsheet_rpn( argv[ i ] );
+   }
+
    while ( gameover == 0)
    {
            getmaxyx( stdscr, rows, cols);
@@ -1367,14 +1537,26 @@ int main( int argc, char *argv[])
            attroff( A_REVERSE ) ; 
            color_set( 4, NULL ); 
            attroff( A_REVERSE);
-           mvprintw( 0, 0, "|NRPN (View)| Spartrekus " );
+           mvprintw( 0, 0, "|NRPN (Menu)| Spartrekus " );
            mvprintw( 2, 0, "    Press Tab to begin the experience..." );
            mvprintw( 5, 0, "    Press 7 for mode without interpreter, really tiny running on 30k only!" );
+           mvprintw( 7, 0, "    Press F2 (or 5) Save");
+           mvprintw( 8, 0, "    Press F3 (or o) Load");
+           mvprintw( 9, 0, "    Press l Dir/ls");
 
            mvprintw( rows-1, cols-1, "%d", ch );
            ch = getch();
 
 	   if ( ch == 27  ) gameover = 1; 
+           else if ( ch ==  'l' ) proc_nrpn_spreadsheet_ls( );
+
+           else if (( ch ==  KEY_F(2)) || ( ch == '5' ))     proc_nrpn_spreadsheet_save();
+           else if (( ch ==  KEY_F(3)) || ( ch == 'o' ))    
+           {
+                proc_nrpn_spreadsheet_load();
+                //proc_nrpn_spreadsheet_tiny();
+           }
+
            else if ( ch ==  '7' ) proc_nrpn_spreadsheet_verytiny();
            else if ( ch ==  '8' ) proc_nrpn_spreadsheet_tiny();
            else if ( ch ==  9 ) proc_nrpn_spreadsheet_tiny();
