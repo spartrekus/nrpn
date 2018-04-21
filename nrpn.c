@@ -13,6 +13,8 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#include <time.h>
 #include <math.h>
 
 
@@ -24,6 +26,7 @@ int rows, cols;
 char ncell[CELLYMAX+1][CELLXMAX+1][1024];
 char clipboard[1024];
 char nrpn_filename[PATH_MAX];
+char nrpn_statusbar[PATH_MAX];
 int pile = 1;
 int pilemax = 1;
 
@@ -809,6 +812,31 @@ char *strrlf(char *str)
       return r ? memcpy(r, ptr, siz ) : NULL;
 }
 
+
+///////////////////////////////
+///////////////////////////////
+///////////////////////////////
+char *strtimestamp()
+{
+      long t;
+      struct tm *ltime;
+      time(&t);
+      ltime=localtime(&t);
+      char charo[50];  int fooi ; 
+      fooi = snprintf( charo, 50 , "%04d%02d%02d%02d%02d%02d",
+	1900 + ltime->tm_year, ltime->tm_mon +1 , ltime->tm_mday, 
+	ltime->tm_hour, ltime->tm_min, ltime->tm_sec 
+	);
+    size_t siz = sizeof charo ; 
+    char *r = malloc( sizeof charo );
+    return r ? memcpy(r, charo, siz ) : NULL;
+}
+
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////
 char *strcut( char *str , int myposstart, int myposend )
 {     // copyleft, C function made by Spartrekus 
@@ -1047,10 +1075,23 @@ char *strninput( char *myinitstring )
                   curs_set( 0 );
                   ch = getch();
 
-		  if ( ( ch == KEY_BACKSPACE ) || ( ch == 4  ) )
-		  {
+		  if ( ch == KEY_BACKSPACE ) 
 			 strncpy( strmsg, strcut( strmsg, 1 , strlen( strmsg ) -1 )  ,  PATH_MAX );
-		  }
+
+		  else if ( ch == 4 ) 
+			 strncpy( strmsg,  strtimestamp() ,  PATH_MAX );
+
+		  else if ( ch == 27 ) 
+                  {
+                         attron( A_REVERSE );
+                         mvprintw( rows-1, 0, "Cancel..." );
+                         attroff( A_REVERSE );
+			 strncpy( strmsg,  myinitstring ,  PATH_MAX );
+                         strninput_gameover = 1 ; 
+                  }
+
+		  else if ( ch == 2 ) 
+			 strncpy( strmsg,  "" ,  PATH_MAX );
 
 	          else if (
 			(( ch >= 'a' ) && ( ch <= 'z' ) ) 
@@ -1153,6 +1194,38 @@ void proc_nrpn_spreadsheet_ls()
 
 
 
+
+/*
+   void readit() 
+   {
+         char readitline[PATH_MAX];
+         int readline_y = 0;
+         int readline_x = 1;
+	 int readline_col = 1; 
+         if ( fexist( filesource[ 1 ] ) == 1) 
+         {
+           fp = fopen( filesource[ 1 ] , "rb" ) ; 
+           while (!feof(fp)) 
+	   {
+	       readline_col = 1; 
+               fgets( readitline, PATH_MAX, fp); 
+	       readline_y++;
+
+               if(!feof(fp))
+	       {
+                    for( readline_col = 1 ; readline_col <= userselviewmaxx ; readline_col++ ) 
+                      // strncpy( idata[readline_y][ readline_col ], strsplit(readitline, 9 , readline_col ) , CELLCONTENTMAX );
+                      strncpy( idata[readline_y][ readline_col ], strsplit(readitline, ';' , readline_col ) , CELLCONTENTMAX );
+	       }
+	   }
+	   fclose( fp );
+	 }
+   }
+*/
+
+
+
+
 /////////////////////////////////////////////
 void proc_nrpn_spreadsheet_rpn( char *myfile )
 {
@@ -1195,6 +1268,7 @@ void proc_nrpn_spreadsheet_load( )
   if ( strcmp( charo , "" ) != 0 ) 
   {
      proc_nrpn_spreadsheet_rpn( charo );
+     strncpy( nrpn_statusbar, "Document Loaded." , PATH_MAX );
   }
   else 
     mvprintw(  rows-1, 0, "Operation Abort");
@@ -1245,10 +1319,11 @@ void proc_nrpn_spreadsheet_save()
       }
       fclose( fp );
       mvprintw(  rows-1, 0, "Saved to %s.", nrpn_filename );
+      strncpy( nrpn_statusbar, "Document Saved." , PATH_MAX );
     }
   else 
     mvprintw(  rows-1, 0, "Operation Abort");
-  getch();
+  // getch();
   attroff( A_REVERSE );
 }
 
@@ -1340,6 +1415,7 @@ void proc_nrpn_spreadsheet_verytiny()
                                          break; 
                                    }
                            }
+    // very tiny
    }
 }
 
@@ -1371,39 +1447,71 @@ void proc_nrpn_spreadsheet_tiny()
             for( rruni = 1 ; rruni <= CELLYMAX ; rruni++ ) mvprintw( 1+ rruni, 0 , "R%d", rruni );
             for( rrunj = 1 ; rrunj <= CELLXMAX ; rrunj++ ) mvprintw( 1, 3+10*rrunj -8 , "C%d", rrunj );
 
+
+            // print calcs
             for( rruni = 1 ; rruni <= CELLYMAX ; rruni++ )
             for( rrunj = 1 ; rrunj <= CELLXMAX ; rrunj++ )
             {
                  attroff(A_REVERSE);
-                 if ( rrunj == tableselx ) 
-                   if ( rruni == tablesely ) 
-                      attron(A_REVERSE);
-                 //mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%s", strcut( ncell[rruni][rrunj] , 1 , 8 ) );  // increases memory usage badly 
+                 if ( rrunj == tableselx ) if ( rruni == tablesely ) attron(A_REVERSE);
+
+
                  if (( strcmp( ncell[rruni][rrunj] , "-" ) == 0 ) || ( strcmp( ncell[rruni][rrunj] , "" ) == 0 ))
                    mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "-", ncell[rruni][rrunj] );
                  else if ( ncell[rruni][rrunj][0] == '\'' ) 
                    mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%s", ncell[rruni][rrunj] );
                  else
                  {
-                      if (  active_interpreter == 1 ) 
+                      if (  active_interpreter == 1 )  //with interpreter
                          mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%g", te_interp(  strinterpreter( ncell[rruni][rrunj] ) , 0 ) );
-                      else if (  active_interpreter == 2 ) 
+                      else if (  active_interpreter == 2 )  // with strcut
                          mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%g", te_interp(  strcut( ncell[rruni][rrunj], 1, 10 ) , 0 ));
-                      else if (  active_interpreter == 0 ) 
+                      else if (  active_interpreter == 0 ) // just calculate
                          mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%g", te_interp(  ncell[rruni][rrunj] , 0 ));
                  }
             }
 
+            // print strings
+            for( rruni = 1 ; rruni <= CELLYMAX ; rruni++ )
+            for( rrunj = 1 ; rrunj <= CELLXMAX ; rrunj++ )
+            {
+                 attroff(A_REVERSE);
+                 if ( rrunj == tableselx ) if ( rruni == tablesely ) attron(A_REVERSE);
+
+                 if ( ( ncell[rruni][rrunj][0] == '\'' ) && ( ncell[rruni][rrunj][1] == '\'' ) )
+                 {
+                    attron(A_REVERSE);
+                    mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%s", ncell[rruni][rrunj] , 0 );
+                 }
+                 else if ( ( ncell[rruni][rrunj][0] == '\'' ) && ( ncell[rruni][rrunj][1] != '\'' ) )
+                    mvprintw( 1+ rruni, 3+ 10*rrunj -8 , "%s", ncell[rruni][rrunj] , 0 );
+            }
+
+
+            /// cellbar
             attroff(A_REVERSE);
             mvprintw( rows-1, 0, "[%d,%d] = %s ", tablesely, tableselx, ncell[ tablesely][tableselx ] );
             attroff(A_REVERSE);
             if      ( active_interpreter == 1 ) printw( "#" );
             else if ( active_interpreter == 2 ) printw( "C" );
+
+            /// statusbar
+            if ( strcmp( nrpn_statusbar, "" ) != 0 )
+            {
+                attron( A_REVERSE );
+                mvprintw( rows-1, 0 , "%s", nrpn_statusbar );
+                strncpy( nrpn_statusbar, "" , PATH_MAX );
+                attroff( A_REVERSE );
+            }
+
             mvprintw( rows-1, cols-1, "%d", ch );
             ch = getch();
+
             if      ( ch == 27 )   spreadsheet_gameover = 1;
             else if ( ch == 'i' )  spreadsheet_gameover = 1; 
             else if ( ch == 9 )  spreadsheet_gameover = 1; 
+
+            
             else if ( ch == 10 ) 
             {
                  attron( A_REVERSE ); mvprintw( rows-2, 0, "[SET #R%dC%d CELL]", tablesely, tableselx ); attroff( A_REVERSE );
@@ -1411,6 +1519,7 @@ void proc_nrpn_spreadsheet_tiny()
                  snprintf( ncell[ tablesely ] [ tableselx ] , CELLSTRMAX , "%s",  charo );
                  tablesely++;
             }
+
             else if ( ch == '\'' ) 
             {
                  attron( A_REVERSE ); mvprintw( rows-2, 0, "[SET #R%dC%d CELL]", tablesely, tableselx ); attroff( A_REVERSE );
@@ -1471,6 +1580,28 @@ void proc_nrpn_spreadsheet_tiny()
                                          break; 
                                    }
                            }
+                          else if  ( ch ==  KEY_F(2)) proc_nrpn_spreadsheet_save();
+                          else if  ( ch ==  KEY_F(3)) proc_nrpn_spreadsheet_load();
+                          else
+            switch( ch ) 
+            {    
+                 case '1':
+                 case '2':
+                 case '3':
+                 case '4':
+                 case '5':
+                 case '6':
+                 case '7':
+                 case '8':
+                 case '9':
+                 case '0':
+                   attron( A_REVERSE ); mvprintw( rows-2, 0, "[SET #R%dC%d CELL]", tablesely, tableselx ); attroff( A_REVERSE );
+                   snprintf( charo , PATH_MAX , "%c",  ch );
+                   strncpy(  charo , strninput( charo  ) , PATH_MAX );
+                   snprintf( ncell[ tablesely ] [ tableselx ] , CELLSTRMAX , "%s",  charo );
+                   tablesely++;
+                   break;
+            }
    }
 }
 
@@ -1490,6 +1621,7 @@ int main( int argc, char *argv[])
 {
    strncpy( clipboard, "" , CELLSTRMAX );
    strncpy( nrpn_filename, "file.rpn" , CELLSTRMAX );
+   strncpy( nrpn_statusbar, "" , PATH_MAX );
    char cwd[PATH_MAX];
    int j, i ;  
    char charo[PATH_MAX]; 
